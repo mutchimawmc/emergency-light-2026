@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Light PM 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0e1a;--s1:#111827;--s2:#1a2236;--br:#1f2d47;
+  --ac:#00d4ff;--ac2:#ff6b35;--ok:#00e676;--warn:#ffd600;--pend:#78909c;
+  --tx:#e8f4fd;--tx2:#8bacc8;--tx3:#4a6580;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03)1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:20px 16px;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--br);flex-wrap:wrap;}
+.hdr-l{display:flex;align-items:center;gap:12px;}
+.logo{width:48px;height:48px;background:linear-gradient(135deg,var(--ac),#0066ff);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(0,212,255,.3);flex-shrink:0;}
+.htit h1{font-size:1.25rem;font-weight:700;}
+.htit p{font-size:.75rem;color:var(--tx2);margin-top:2px;font-family:'IBM Plex Mono',monospace;}
+.badge{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--ac);padding:4px 11px;border-radius:100px;font-size:.72rem;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+
+/* MONTH TABS */
+.month-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding:12px;background:var(--s1);border:1px solid var(--br);border-radius:var(--r);}
+.mtab{padding:6px 12px;border-radius:7px;font-size:.75rem;cursor:pointer;border:1px solid var(--br);color:var(--tx2);background:transparent;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;transition:all .18s;white-space:nowrap;}
+.mtab:hover,.mtab.active{background:rgba(0,212,255,.12);border-color:var(--ac);color:var(--ac);}
+.mtab.done{border-color:rgba(0,230,118,.25);color:var(--ok);}
+.mtab.done.active{background:rgba(0,230,118,.1);}
+
+/* SUMMARY */
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;}
+.sc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:13px;}
+.sc .n{font-size:1.9rem;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;}
+.sc .l{font-size:.7rem;color:var(--tx2);margin-top:3px;}
+.sc.t .n{color:var(--ac);}
+.sc.ok .n{color:var(--ok);}
+.sc.pd .n{color:var(--warn);}
+.sc.pr .n{color:#b39ddb;}
+
+/* CONTROLS */
+.ctrl{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.sbox{flex:1;min-width:180px;background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:8px 13px;color:var(--tx);font-family:'IBM Plex Sans Thai',sans-serif;font-size:.85rem;outline:none;transition:border-color .18s;}
+.sbox:focus{border-color:var(--ac);}
+.sbox::placeholder{color:var(--tx3);}
+.view-btn{background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:8px 13px;color:var(--tx2);font-size:.78rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Sans Thai',sans-serif;}
+.view-btn.active,.view-btn:hover{background:rgba(0,212,255,.1);border-color:var(--ac);color:var(--ac);}
+.floor-qr-btn{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.25);border-radius:8px;padding:8px 13px;color:var(--ac2);font-size:.78rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;}
+.floor-qr-btn:hover{background:rgba(255,107,53,.2);}
+
+/* GROUP TABS */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--br);}
+.tab{background:var(--s1);border:1px solid var(--br);border-radius:7px;padding:5px 10px;color:var(--tx2);font-size:.72rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Mono',monospace;font-weight:600;white-space:nowrap;}
+.tab:hover,.tab.active{background:rgba(0,212,255,.1);border-color:var(--ac);color:var(--ac);}
+
+/* FLOOR SECTION */
+.fsec{margin-bottom:24px;}
+.fhead{display:flex;align-items:center;gap:10px;margin-bottom:11px;padding:10px 14px;background:var(--s1);border:1px solid var(--br);border-radius:9px;border-left:3px solid var(--ac);}
+.flabel{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.9rem;color:var(--ac);}
+.fcnt{font-size:.72rem;color:var(--tx2);background:rgba(0,212,255,.08);padding:2px 8px;border-radius:100px;font-family:'IBM Plex Mono',monospace;}
+.fstats{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.sp{font-size:.68rem;padding:2px 7px;border-radius:100px;font-family:'IBM Plex Mono',monospace;font-weight:600;}
+.sp.ok{background:rgba(0,230,118,.1);color:var(--ok);border:1px solid rgba(0,230,118,.2);}
+.sp.pd{background:rgba(255,214,0,.1);color:var(--warn);border:1px solid rgba(255,214,0,.2);}
+.fqr-btn{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--ac2);padding:3px 8px;border-radius:5px;font-size:.65rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Mono',monospace;font-weight:600;}
+.fqr-btn:hover{background:rgba(255,107,53,.2);}
+
+/* DEVICE GRID */
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;}
+.dcard{background:var(--s1);border:1px solid var(--br);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .18s;}
+.dcard:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.4);}
+.dcard.s-ok{border-color:rgba(0,230,118,.2);}
+.dcard.s-ok:hover{border-color:var(--ok);}
+.dcard.s-skip{border-color:rgba(120,144,156,.2);opacity:.6;}
+.dsbar{height:3px;background:var(--pend);}
+.dcard.s-ok .dsbar{background:var(--ok);}
+.dcard.s-skip .dsbar{background:var(--tx3);}
+.dbody{padding:9px 11px;}
+.dnum{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--tx3);margin-bottom:2px;}
+.dcode{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--ac);font-weight:600;margin-bottom:4px;word-break:break-all;}
+.dloc{font-size:.72rem;color:var(--tx);line-height:1.33;min-height:26px;}
+.dfoot{display:flex;align-items:center;justify-content:space-between;padding:6px 11px;border-top:1px solid var(--br);background:rgba(0,0,0,.15);}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--pend);flex-shrink:0;}
+.sdot.ok{background:var(--ok);box-shadow:0 0 5px var(--ok);}
+.sdot.skip{background:var(--tx3);}
+.stxt{font-size:.63rem;color:var(--tx2);}
+.qbtn{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--ac);padding:3px 7px;border-radius:5px;font-size:.6rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Mono',monospace;}
+.qbtn:hover{background:rgba(0,212,255,.2);}
+
+/* CHART VIEW */
+.chart-section{display:none;}
+.chart-section.show{display:block;}
+.chart-card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);padding:16px;margin-bottom:16px;}
+.chart-title{font-size:.85rem;font-weight:600;color:var(--tx);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);backdrop-filter:blur(10px);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--br);border-radius:18px;width:100%;overflow:hidden;animation:mi .22s ease;}
+@keyframes mi{from{opacity:0;transform:scale(.92) translateY(14px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.mhead{padding:15px 20px;border-bottom:1px solid var(--br);background:linear-gradient(135deg,rgba(0,212,255,.05),transparent);display:flex;align-items:center;justify-content:space-between;}
+.mtitle{font-weight:700;font-size:.9rem;}
+.mclose{width:28px;height:28px;background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.mclose:hover{color:var(--tx);border-color:var(--ac);}
+.mbody{padding:16px 20px;max-height:82vh;overflow-y:auto;}
+.qwrap{background:#fff;border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.ilist{display:flex;flex-direction:column;gap:6px;}
+.irow{display:flex;gap:8px;padding:8px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--br);align-items:flex-start;}
+.ilbl{font-size:.65rem;color:var(--tx3);font-weight:600;min-width:60px;flex-shrink:0;font-family:'IBM Plex Mono',monospace;padding-top:1px;}
+.ival{font-size:.76rem;color:var(--tx);line-height:1.4;}
+.ival.code{font-family:'IBM Plex Mono',monospace;color:var(--ac);font-size:.7rem;}
+.fbtn{display:block;width:100%;margin-top:12px;padding:10px;background:linear-gradient(135deg,rgba(255,107,53,.15),rgba(255,107,53,.05));border:1px solid rgba(255,107,53,.3);border-radius:9px;color:var(--ac2);font-size:.8rem;font-weight:600;text-align:center;cursor:pointer;text-decoration:none;transition:all .18s;}
+.fbtn:hover{background:linear-gradient(135deg,rgba(255,107,53,.25),rgba(255,107,53,.1));border-color:var(--ac2);}
+
+/* FLOOR QR MODAL */
+.floor-modal{max-width:700px;}
+.floor-charts-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.chart-mini{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px;}
+.chart-mini-title{font-size:.72rem;color:var(--tx2);margin-bottom:8px;font-weight:600;}
+.floor-device-list{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto;}
+.fdrow{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--s2);border-radius:6px;border:1px solid var(--br);font-size:.72rem;}
+.fdrow .dc{font-family:'IBM Plex Mono',monospace;color:var(--ac);font-size:.65rem;width:145px;flex-shrink:0;}
+.fdrow .dl{flex:1;color:var(--tx);}
+.fdrow .ds{font-size:.65rem;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;}
+.ds.ok{background:rgba(0,230,118,.1);color:var(--ok);}
+.ds.pd{background:rgba(255,214,0,.1);color:var(--warn);}
+.ds.sk{background:rgba(120,144,156,.1);color:var(--tx3);}
+.floor-qr-wrap{display:flex;gap:12px;align-items:flex-start;}
+.floor-qr-box{background:#fff;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.nodata{text-align:center;padding:40px;color:var(--tx3);font-size:.88rem;}
+.print-btn{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.2);color:var(--ok);padding:7px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;transition:all .2s;}
+.print-btn:hover{background:rgba(0,230,118,.2);}
+
+select.status-sel{background:var(--s2);border:1px solid var(--br);color:var(--tx);padding:3px 6px;border-radius:5px;font-size:.73rem;width:100%;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+
+@media(max-width:600px){.dgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}.sumgrid{grid-template-columns:repeat(3,1fr);}.fstats{display:none;}.floor-charts-wrap{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="logo">🔆</div>
+      <div class="htit">
+        <h1>Emergency Light PM 2026</h1>
+        <p>EMERGENCY LIGHT-(PM)2026 · ระบบติดตาม QR Code</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="print-btn" onclick="window.print()">🖨 พิมพ์</button>
+    </div>
+  </div>
+
+  <!-- MONTH TABS -->
+  <div class="month-bar" id="monthBar"></div>
+
+  <!-- SUMMARY -->
+  <div class="sumgrid" id="sg"></div>
+
+  <!-- CONTROLS -->
+  <div class="ctrl">
+    <input class="sbox" type="text" placeholder="🔍 ค้นหารหัส / ตำแหน่ง / ชั้น..." id="sb" oninput="doFilter()">
+    <button class="view-btn active" id="vlist" onclick="setView('list')">☰ รายการ</button>
+    <button class="view-btn" id="vchart" onclick="setView('chart')">📊 กราฟ</button>
+    <button class="floor-qr-btn" onclick="openFloorQRPicker()">📍 QR รายชั้น</button>
+  </div>
+
+  <!-- GROUP TABS -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- LIST VIEW -->
+  <div id="listView"></div>
+
+  <!-- CHART VIEW -->
+  <div class="chart-section" id="chartView"></div>
+</div>
+
+<!-- DEVICE MODAL -->
+<div class="overlay" id="devOv" onclick="cls(event,'devOv')">
+  <div class="modal" style="max-width:380px;">
+    <div class="mhead"><div class="mtitle" id="devTitle">รายละเอียด</div><button class="mclose" onclick="closeMod('devOv')">✕</button></div>
+    <div class="mbody">
+      <div class="qwrap"><div id="devQrc"></div></div>
+      <div class="ilist" id="devInfo"></div>
+      <a id="devFbtn" class="fbtn" target="_blank">📋 กรอกแบบฟอร์มตรวจสอบ (Google Form)</a>
+    </div>
+  </div>
+</div>
+
+<!-- DONE CONFIRMATION MODAL -->
+<div class="overlay" id="doneOv" onclick="cls(event,'doneOv')">
+  <div class="modal" style="max-width:360px;">
+    <div class="mhead" style="border-left:3px solid #00e676;"><div class="mtitle" style="color:#00e676;">✅ ผลการบันทึก</div><button class="mclose" onclick="closeMod('doneOv')">✕</button></div>
+    <div class="mbody"><div id="doneContent"></div></div>
+  </div>
+</div>
+
+<!-- INFO BANNER for file:// mode -->
+<div id="fileBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:2000;background:#1a2236;border-bottom:2px solid #ffd600;padding:10px 40px 10px 16px;font-size:.78rem;color:#ffd600;text-align:center;">
+  ⚠️ เปิดจาก file:// — QR Scan จะทำงานได้ต้องอัปโหลดไฟล์ขึ้น Web Server (เช่น GitHub Pages, Netlify)
+  <button onclick="this.parentElement.style.display='none'" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:transparent;border:1px solid #ffd600;color:#ffd600;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:.75rem;">✕</button>
+</div>
+
+<!-- FLOOR QR PICKER -->
+<div class="overlay" id="fqrPicker" onclick="cls(event,'fqrPicker')">
+  <div class="modal" style="max-width:420px;">
+    <div class="mhead"><div class="mtitle">เลือกชั้นสำหรับ QR สรุป</div><button class="mclose" onclick="closeMod('fqrPicker')">✕</button></div>
+    <div class="mbody">
+      <p style="font-size:.78rem;color:var(--tx2);margin-bottom:12px;">เลือกชั้น/โซน เพื่อดู QR Code สรุปสถานะและกราฟทุกเครื่องในชั้นนั้น</p>
+      <div id="floorPickerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:7px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOOR DETAIL MODAL -->
+<div class="overlay" id="floorOv" onclick="cls(event,'floorOv')">
+  <div class="modal floor-modal">
+    <div class="mhead"><div class="mtitle" id="floorTitle">ชั้น</div><button class="mclose" onclick="closeMod('floorOv')">✕</button></div>
+    <div class="mbody">
+      <div class="floor-qr-wrap">
+        <div>
+          <div class="floor-qr-box"><div id="floorQrc"></div></div>
+          <p style="font-size:.65rem;color:var(--tx3);text-align:center;margin-top:6px;">สแกนเพื่อดูสรุปชั้นนี้</p>
+        </div>
+        <div style="flex:1;">
+          <div class="floor-charts-wrap">
+            <div class="chart-mini">
+              <div class="chart-mini-title">สถานะเครื่อง</div>
+              <div style="position:relative;height:130px;"><canvas id="floorDough"></canvas></div>
+            </div>
+            <div class="chart-mini">
+              <div class="chart-mini-title">รายเดือน (ปีนี้)</div>
+              <div style="position:relative;height:130px;"><canvas id="floorBar"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin:10px 0 6px;font-size:.72rem;color:var(--tx2);font-weight:600;">รายการเครื่องทั้งหมด (เดือนที่เลือก)</div>
+      <div class="floor-device-list" id="floorDevList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLSfCwwW-HJqOM-h_ImMh30wCbUyPs4_9q1at85b8rHeIJ-slcw/viewform?usp=sharing";
+const MONTHS=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const MSHORT=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+
+// ===== RAW DATA =====
+const DEVICES=[
+  {no:1,code:"90-EE-LFE04-0001",location:"ห้องเครื่องปั้ม",floor:"B2"},
+  {no:2,code:"90-EE-LFE04-0002",location:"หน้าห้องเครื่องปั้ม",floor:"B2"},
+  {no:3,code:"90-EE-LFE04-0003",location:"ผนังลิฟท์ 1,2,3,4",floor:"B2"},
+  {no:4,code:"90-EE-LFE04-0004",location:"หน้าลิฟท์ 9,13",floor:"B2"},
+  {no:5,code:"90-EE-LFE04-0005",location:"หน้าลิฟท์ 10",floor:"B2"},
+  {no:6,code:"90-EE-LFE04-0006",location:"ที่จอดรถ",floor:"B2"},
+  {no:7,code:"90-EE-LFE04-0007",location:"ที่จอดรถ",floor:"B2"},
+  {no:8,code:"90-EE-LFE04-0008",location:"หน้าลิฟท์ 11,12",floor:"B2"},
+  {no:9,code:"90-EE-LFE04-0009",location:"หน้าบ่อบำบัด",floor:"B1"},
+  {no:10,code:"90-EE-LFE04-0010",location:"ที่จอดรถ",floor:"B1"},
+  {no:11,code:"90-EE-LFE04-0011",location:"หน้าลิฟท์ 11,12",floor:"B1"},
+  {no:12,code:"90-EE-LFE04-0012",location:"หน้าลิฟท์ 10",floor:"B1"},
+  {no:13,code:"90-EE-LFE04-0013",location:"ทางเดินหน้าลิฟท์ 10",floor:"B1"},
+  {no:14,code:"90-EE-LFE04-0014",location:"หน้าลิฟท์ 9,13",floor:"B1"},
+  {no:15,code:"90-EE-LFE04-0015",location:"ห้อง รปภ.",floor:"B1"},
+  {no:16,code:"90-EE-LFE04-0016",location:"หน้าห้อง Locker ชาย",floor:"B1"},
+  {no:17,code:"90-EE-LFE04-0017",location:"ด้านหน้าที่จอดรถมอเตอร์ไซด์",floor:"B1"},
+  {no:18,code:"90-EE-LFE04-0018",location:"หน้าเคาน์เตอร์ ชั้น 1",floor:"1"},
+  {no:19,code:"90-EE-LFE04-0019",location:"โถงชั้น 1 IMSC",floor:"1"},
+  {no:20,code:"90-EE-LFE04-0020",location:"หน้าห้องน้ำส่วนกลาง",floor:"1"},
+  {no:21,code:"90-EE-LFE04-0021",location:"ทางเดินส่วนกลาง",floor:"1"},
+  {no:22,code:"90-EE-LFE04-0022",location:"หน้าลิฟท์ 5-6-7-8",floor:"1"},
+  {no:23,code:"90-EE-LFE04-0023",location:"หน้าลิฟท์ 9-13",floor:"1"},
+  {no:24,code:"90-EE-LFE04-0024",location:"ทางเดินฉุกเฉิน",floor:"1"},
+  {no:25,code:"90-EE-LFE04-0025",location:"ทางเข้าประตูฉุกเฉิน ชั้น 1",floor:"1"},
+  {no:26,code:"90-EE-LFE04-0026",location:"ทางเดิน ER ชั้น 1",floor:"1"},
+  {no:27,code:"90-EE-LFE04-0027",location:"หน้าลิฟท์ 11-12",floor:"1"},
+  {no:28,code:"90-EE-LFE04-0028",location:"ทางเดินส่วนกลางลิฟต์ 11-12",floor:"1"},
+  {no:29,code:"90-EE-LFE04-0029",location:"โถงทางเดินส่วนกลาง",floor:"1"},
+  {no:30,code:"90-EE-LFE04-0030",location:"หน้าลิฟท์ 1-2-3-4",floor:"1"},
+  {no:31,code:"90-EE-LFE04-0031",location:"ทางเดินส่วนกลาง DM FOOT",floor:"1"},
+  {no:32,code:"90-EE-LFE04-0032",location:"ทางเดิน DM FOOT",floor:"1"},
+  {no:33,code:"90-EE-LFE04-0033",location:"หน้าห้องควบคุม (MRI&CT1)",floor:"1"},
+  {no:34,code:"90-EE-LFE04-0034",location:"ทางเดินหน้าห้อง WMC Staff",floor:"1A"},
+  {no:35,code:"90-EE-LFE04-0035",location:"หน้าลิฟท์ 9-13",floor:"2"},
+  {no:36,code:"90-EE-LFE04-0036",location:"หน้าลิฟท์ 5-6-7-8",floor:"2"},
+  {no:37,code:"90-EE-LFE04-0037",location:"ทางเดินส่วนกลางด้านหลัง",floor:"2"},
+  {no:38,code:"90-EE-LFE04-0038",location:"ทางเดินแผนกเด็กดี",floor:"2"},
+  {no:39,code:"90-EE-LFE04-0039",location:"ห้อง Treament PED",floor:"2"},
+  {no:40,code:"90-EE-LFE04-0040",location:"โถงทางเดิน PED",floor:"2"},
+  {no:41,code:"90-EE-LFE04-0041",location:"ห้อง Treament MED",floor:"2"},
+  {no:42,code:"90-EE-LFE04-0042",location:"โถงทางเดิน MED",floor:"2"},
+  {no:43,code:"90-EE-LFE04-0043",location:"หน้าลิฟท์ 1-2-3-4",floor:"2"},
+  {no:44,code:"90-EE-LFE04-0044",location:"โถงบริการ MED",floor:"2"},
+  {no:45,code:"90-EE-LFE04-0045",location:"โถงทางเดินลิฟต์ลานจอด",floor:"2"},
+  {no:46,code:"90-EE-LFE04-0046",location:"โถงพักคอยออโถ",floor:"2"},
+  {no:47,code:"90-EE-LFE04-0047",location:"ห้อง Treament ออโถ",floor:"2"},
+  {no:48,code:"90-EE-LFE04-0048",location:"หน้าลิฟท์ 9,13",floor:"3"},
+  {no:49,code:"90-EE-LFE04-0049",location:"หน้าลิฟท์ 5-6-7-8",floor:"3"},
+  {no:50,code:"90-EE-LFE04-0050",location:"ทางเดินหน้าลิฟท์",floor:"3"},
+  {no:51,code:"90-EE-LFE04-0051",location:"ห้องล้างไต",floor:"3"},
+  {no:52,code:"90-EE-LFE04-0052",location:"ทางเดินห้องล้างไต",floor:"3"},
+  {no:53,code:"90-EE-LFE04-0053",location:"หน้าห้องน้ำ ซาวน่า PT",floor:"3"},
+  {no:54,code:"90-EE-LFE04-0054",location:"สระธาราบำบัด",floor:"3"},
+  {no:55,code:"90-EE-LFE04-0055",location:"ห้อง GYM PT",floor:"3"},
+  {no:56,code:"90-EE-LFE04-0056",location:"หน้าเคาน์เตอร์ในห้องหัตถการ PT",floor:"3"},
+  {no:57,code:"90-EE-LFE04-0057",location:"ข้างเคาน์เตอร์แผนก PT",floor:"3"},
+  {no:58,code:"90-EE-LFE04-0058",location:"เคาน์เตอร์แผนกจักษุ",floor:"3"},
+  {no:59,code:"90-EE-LFE04-0059",location:"ในห้องหัตถการจักษุวิทยา",floor:"3"},
+  {no:60,code:"90-EE-LFE04-0060",location:"หน้าห้องตรวจ 5 แผนกจักษุ",floor:"3"},
+  {no:61,code:"90-EE-LFE04-0061",location:"ทางเดินส่วนกลาง",floor:"3"},
+  {no:62,code:"90-EE-LFE04-0062",location:"หน้าลิฟท์ 1-2-3-4",floor:"3"},
+  {no:63,code:"90-EE-LFE04-0063",location:"หน้าคลินิก ENT",floor:"3"},
+  {no:64,code:"90-EE-LFE04-0064",location:"ประตูคลินิก ENT โสต-ศอ-นาสิก",floor:"3"},
+  {no:65,code:"90-EE-LFE04-0065",location:"ทางเดิน ENT",floor:"3"},
+  {no:66,code:"90-EE-LFE04-0066",location:"ห้องหัตถการ ENT",floor:"3"},
+  {no:67,code:"90-EE-LFE04-0067",location:"หน้าเคาน์เตอร์ GI",floor:"3"},
+  {no:68,code:"90-EE-LFE04-0068",location:"ข้างห้อง Treament",floor:"3"},
+  {no:69,code:"90-EE-LFE04-0069",location:"ทางเดินห้องตรวจ GI",floor:"3"},
+  {no:70,code:"90-EE-LFE04-0070",location:"ทางเดินโถงพักคอย GI",floor:"3"},
+  {no:71,code:"90-EE-LFE04-0071",location:"ทางเดินโถงด้านใน GI",floor:"3"},
+  {no:72,code:"90-EE-LFE04-0072",location:"ทางเดินส่วนกลางลิฟต์ 11-12",floor:"3"},
+  {no:73,code:"90-EE-LFE04-0073",location:"หน้าลิฟท์ 9,13",floor:"4"},
+  {no:74,code:"90-EE-LFE04-0074",location:"หน้าลิฟท์ 5-6-7-8",floor:"4"},
+  {no:75,code:"90-EE-LFE04-0075",location:"ทางเดินหน้าลิฟท์ 5-6-7-9",floor:"4"},
+  {no:76,code:"90-EE-LFE04-0076",location:"หน้าลิฟท์ 1-2-3-4",floor:"4"},
+  {no:77,code:"90-EE-LFE04-0077",location:"หน้าห้องคลินิก G",floor:"4"},
+  {no:78,code:"90-EE-LFE04-0078",location:"หน้าเคาน์เตอร์ ประตูคลินิก Dental",floor:"4"},
+  {no:79,code:"90-EE-LFE04-0079",location:"ทางเดินคลินิก Dental",floor:"4"},
+  {no:80,code:"90-EE-LFE04-0080",location:"ทางเดินห้องเตรียมตรวจ",floor:"4"},
+  {no:81,code:"90-EE-LFE04-0081",location:"เคาน์เตอร์ คลินิก wellness",floor:"4"},
+  {no:82,code:"90-EE-LFE04-0082",location:"โถงทางเดินส่วนกลาง",floor:"4"},
+  {no:83,code:"90-EE-LFE04-0083",location:"ทางเดินตรงข้ามห้องหัตถการ",floor:"4"},
+  {no:84,code:"90-EE-LFE04-0084",location:"โถงทางเดิน คลินิก wellness",floor:"4"},
+  {no:85,code:"90-EE-LFE04-0085",location:"โถงทางเดินลิฟต์ลานจอด",floor:"4"},
+  {no:86,code:"90-EE-LFE04-0086",location:"หน้าลิฟท์ 9,13",floor:"5"},
+  {no:87,code:"90-EE-LFE04-0087",location:"หน้าลิฟท์ 5-6-7-8",floor:"5"},
+  {no:88,code:"90-EE-LFE04-0088",location:"ผนังทางเดินลิฟท์ 5-6-7-8",floor:"5"},
+  {no:89,code:"90-EE-LFE04-0089",location:"หลังประตูห้องคลอด",floor:"5"},
+  {no:90,code:"90-EE-LFE04-0090",location:"ทางเดินห้องคลอด",floor:"5"},
+  {no:91,code:"90-EE-LFE04-0091",location:"ทางเดินห้องคลอด (2)",floor:"5"},
+  {no:92,code:"90-EE-LFE04-0092",location:"ทางเดินห้องคลอด (3)",floor:"5"},
+  {no:93,code:"90-EE-LFE04-0093",location:"ทางเดินด้านใน OR",floor:"5"},
+  {no:94,code:"90-EE-LFE04-0094",location:"ทางเดินด้านหลัง OR",floor:"5"},
+  {no:95,code:"90-EE-LFE04-0095",location:"โถงพักคอยด้านหน้า",floor:"5"},
+  {no:96,code:"90-EE-LFE04-0096",location:"หน้าลิฟท์ 1-2-3-4",floor:"5"},
+  {no:97,code:"90-EE-LFE04-0097",location:"ห้องเตรียมผู้ป่วย",floor:"5"},
+  {no:98,code:"90-EE-LFE04-0098",location:"หน้าห้องพักฟื้นหลังผ่าตัด",floor:"5"},
+  {no:99,code:"90-EE-LFE04-0099",location:"หลังห้องผ่าตัด OR-6",floor:"5"},
+  {no:100,code:"90-EE-LFE04-0100",location:"หน้าห้องพักแพทย์",floor:"5"},
+  {no:101,code:"90-EE-LFE04-0101",location:"หน้าลิฟท์เล็ก",floor:"5"},
+  {no:102,code:"90-EE-LFE04-0102",location:"หลังห้องผ่าตัด OR-1",floor:"5"},
+  {no:103,code:"90-EE-LFE04-0103",location:"หลังห้องผ่าตัด OR-2",floor:"5"},
+  {no:104,code:"90-EE-LFE04-0104",location:"หลังห้องผ่าตัด OR-3",floor:"5"},
+  {no:105,code:"90-EE-LFE04-0105",location:"หน้าห้องเวชภัณท์ OR",floor:"5"},
+  {no:106,code:"90-EE-LFE04-0106",location:"หน้าลิฟท์ 9-13",floor:"6"},
+  {no:107,code:"90-EE-LFE04-0107",location:"หน้าลิฟท์ 5-6-7-8",floor:"6"},
+  {no:108,code:"90-EE-LFE04-0108",location:"ประตูลิฟท์ 5-6-7-8",floor:"6"},
+  {no:109,code:"90-EE-LFE04-0109",location:"ทางเดินข้างห้องน้ำชาย",floor:"6"},
+  {no:110,code:"90-EE-LFE04-0110",location:"ทางเดิน ประตูหลังห้อง LAB",floor:"6"},
+  {no:111,code:"90-EE-LFE04-0111",location:"ในห้อง LAB",floor:"6"},
+  {no:112,code:"90-EE-LFE04-0112",location:"ทางเดิน ห้อง ICT",floor:"6"},
+  {no:113,code:"90-EE-LFE04-0113",location:"ในห้องทำงานโถง ICT",floor:"6"},
+  {no:114,code:"90-EE-LFE04-0114",location:"ข้างห้องกระสวย",floor:"6"},
+  {no:115,code:"90-EE-LFE04-0115",location:"ห้องแผนกวัสดุ",floor:"6"},
+  {no:116,code:"90-EE-LFE04-0116",location:"ห้องจ่ายยา",floor:"6"},
+  {no:117,code:"90-EE-LFE04-0117",location:"แผนกคลังยาเวชภัณฑ์",floor:"6"},
+  {no:118,code:"90-EE-LFE04-0118",location:"ตู้เก็บยา 2 (คลังยา)",floor:"6"},
+  {no:119,code:"90-EE-LFE04-0119",location:"ในคลังยา หน้าตู้แช่ยา",floor:"6"},
+  {no:120,code:"90-EE-LFE04-0120",location:"ทางเดินคลังยา",floor:"6"},
+  {no:121,code:"90-EE-LFE04-0121",location:"ฝ่ายคลังยาและจัดซื้อ",floor:"6"},
+  {no:122,code:"90-EE-LFE04-0122",location:"ข้างห้องเก็บผ้า",floor:"6"},
+  {no:123,code:"90-EE-LFE04-0123",location:"ทางเดิน หน้าแผนกคลังยา",floor:"6"},
+  {no:208,code:"90-EE-LFE04-0208",location:"หน้าลิฟท์ ส่งของ",floor:"6A"},
+  {no:209,code:"90-EE-LFE04-0209",location:"ห้อง ShaftTRANE/FCU",floor:"6A"},
+  {no:210,code:"90-EE-LFE04-0210",location:"ห้อง Shaft ข้างตู้ 6AAPB",floor:"6A"},
+  {no:211,code:"90-EE-LFE04-0211",location:"ห้องหลังตู้ดับเพลิง",floor:"6A"},
+  {no:212,code:"90-EE-LFE04-0212",location:"ห้อง Shaft ข้างแอร์ DAIKIN",floor:"6A"},
+  {no:213,code:"90-EE-LFE04-0213",location:"ห้อง Shaft ทางเดินตู้ SMAC",floor:"6A"},
+  {no:124,code:"90-EE-LFE04-0124",location:"ผนังลิฟท์ 9,13",floor:"7"},
+  {no:125,code:"90-EE-LFE04-0125",location:"ผนังลิฟท์ 5-8",floor:"7"},
+  {no:126,code:"90-EE-LFE04-0126",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"7"},
+  {no:127,code:"90-EE-LFE04-0127",location:"ข้างเคาน์เตอร์พยาบาล",floor:"7"},
+  {no:128,code:"90-EE-LFE04-0128",location:"หน้าลิฟท์ 1-4",floor:"7"},
+  {no:129,code:"90-EE-LFE04-0129",location:"หน้าห้อง 702/Room 02",floor:"7"},
+  {no:130,code:"90-EE-LFE04-0130",location:"โถงพักคอย",floor:"7"},
+  {no:131,code:"90-EE-LFE04-0131",location:"หน้าห้อง 710/Room 10",floor:"7"},
+  {no:132,code:"90-EE-LFE04-0132",location:"หน้าห้อง 715/Room 15",floor:"7"},
+  {no:133,code:"90-EE-LFE04-0133",location:"หน้าห้อง 720/Room 20",floor:"7"},
+  {no:134,code:"90-EE-LFE04-0134",location:"เนอเชอรี่ WORD 7",floor:"7"},
+  {no:135,code:"90-EE-LFE04-0135",location:"ผนังลิฟท์ 9,13",floor:"8"},
+  {no:136,code:"90-EE-LFE04-0136",location:"ผนังลิฟท์ 5-8",floor:"8"},
+  {no:137,code:"90-EE-LFE04-0137",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"8"},
+  {no:138,code:"90-EE-LFE04-0138",location:"ข้างเคาน์เตอร์พยาบาล",floor:"8"},
+  {no:139,code:"90-EE-LFE04-0139",location:"หน้าลิฟท์ 1-4",floor:"8"},
+  {no:140,code:"90-EE-LFE04-0140",location:"หน้าห้อง Room 02",floor:"8"},
+  {no:141,code:"90-EE-LFE04-0141",location:"โถงพักคอย",floor:"8"},
+  {no:142,code:"90-EE-LFE04-0142",location:"หน้าห้อง Room 10",floor:"8"},
+  {no:143,code:"90-EE-LFE04-0143",location:"หน้าห้อง Room 15",floor:"8"},
+  {no:144,code:"90-EE-LFE04-0144",location:"หน้าห้อง Room 20",floor:"8"},
+  {no:145,code:"90-EE-LFE04-0145",location:"ผนังลิฟท์ 9,13 (ชุด 2)",floor:"8"},
+  {no:146,code:"90-EE-LFE04-0146",location:"ผนังลิฟท์ 5-8 (ชุด 2)",floor:"8"},
+  {no:147,code:"90-EE-LFE04-0147",location:"ผนังข้างลิฟท์ 5-6-7-8 (ชุด 2)",floor:"8"},
+  {no:148,code:"90-EE-LFE04-0148",location:"ข้างเคาน์เตอร์พยาบาล (ชุด 2)",floor:"8"},
+  {no:149,code:"90-EE-LFE04-0149",location:"หน้าลิฟท์ 1-4 (ชุด 2)",floor:"8"},
+  {no:150,code:"90-EE-LFE04-0150",location:"หน้าห้อง Room 02",floor:"9"},
+  {no:151,code:"90-EE-LFE04-0151",location:"โถงพักคอย",floor:"9"},
+  {no:152,code:"90-EE-LFE04-0152",location:"หน้าห้อง Room 10",floor:"9"},
+  {no:153,code:"90-EE-LFE04-0153",location:"หน้าห้อง Room 15",floor:"9"},
+  {no:154,code:"90-EE-LFE04-0154",location:"หน้าห้อง Room 20",floor:"9"},
+  {no:155,code:"90-EE-LFE04-0155",location:"ผนังลิฟท์ 9,13",floor:"10"},
+  {no:156,code:"90-EE-LFE04-0156",location:"ผนังลิฟท์ 5-8",floor:"10"},
+  {no:157,code:"90-EE-LFE04-0157",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"10"},
+  {no:158,code:"90-EE-LFE04-0158",location:"ข้างเคาน์เตอร์พยาบาล",floor:"10"},
+  {no:159,code:"90-EE-LFE04-0159",location:"หน้าลิฟท์ 1-4",floor:"10"},
+  {no:160,code:"90-EE-LFE04-0160",location:"หน้าห้อง Room 02",floor:"10"},
+  {no:161,code:"90-EE-LFE04-0161",location:"โถงพักคอย",floor:"10"},
+  {no:162,code:"90-EE-LFE04-0162",location:"หน้าห้อง Room 10",floor:"10"},
+  {no:163,code:"90-EE-LFE04-0163",location:"หน้าห้อง Room 15",floor:"10"},
+  {no:164,code:"90-EE-LFE04-0164",location:"หน้าห้อง Room 20",floor:"10"},
+  {no:165,code:"90-EE-LFE04-0165",location:"ผนังลิฟท์ 9,13",floor:"18"},
+  {no:166,code:"90-EE-LFE04-0166",location:"ผนังลิฟท์ 5-8",floor:"18"},
+  {no:167,code:"90-EE-LFE04-0167",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"18"},
+  {no:168,code:"90-EE-LFE04-0168",location:"ข้างเคาน์เตอร์พยาบาล",floor:"18"},
+  {no:169,code:"90-EE-LFE04-0169",location:"หน้าลิฟท์ 1-4",floor:"18"},
+  {no:170,code:"90-EE-LFE04-0170",location:"หน้าห้อง Room 02",floor:"18"},
+  {no:171,code:"90-EE-LFE04-0171",location:"โถงพักคอย",floor:"18"},
+  {no:172,code:"90-EE-LFE04-0172",location:"หน้าห้อง Room 10",floor:"18"},
+  {no:173,code:"90-EE-LFE04-0173",location:"หน้าห้อง Room 15",floor:"18"},
+  {no:174,code:"90-EE-LFE04-0174",location:"หน้าห้อง Room 20",floor:"18"},
+  {no:175,code:"90-EE-LFE04-0175",location:"ผนังลิฟท์ 9,13",floor:"19"},
+  {no:176,code:"90-EE-LFE04-0176",location:"ผนังลิฟท์ 5-8",floor:"19"},
+  {no:177,code:"90-EE-LFE04-0177",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"19"},
+  {no:178,code:"90-EE-LFE04-0178",location:"ข้างเคาน์เตอร์พยาบาล",floor:"19"},
+  {no:179,code:"90-EE-LFE04-0179",location:"หน้าลิฟท์ 1-4",floor:"19"},
+  {no:180,code:"90-EE-LFE04-0180",location:"หน้าห้อง Room 02",floor:"19"},
+  {no:181,code:"90-EE-LFE04-0181",location:"โถงพักคอย",floor:"19"},
+  {no:182,code:"90-EE-LFE04-0182",location:"หน้าห้อง Room 10",floor:"19"},
+  {no:183,code:"90-EE-LFE04-0183",location:"หน้าห้อง Room 15",floor:"19"},
+  {no:184,code:"90-EE-LFE04-0184",location:"หน้าห้อง Room 20",floor:"19"},
+  {no:185,code:"90-EE-LFE04-0185",location:"ผนังลิฟท์ 9,13",floor:"20"},
+  {no:186,code:"90-EE-LFE04-0186",location:"ผนังลิฟท์ 5-8",floor:"20"},
+  {no:187,code:"90-EE-LFE04-0187",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"20"},
+  {no:188,code:"90-EE-LFE04-0188",location:"ข้างเคาน์เตอร์พยาบาล",floor:"20"},
+  {no:189,code:"90-EE-LFE04-0189",location:"หน้าลิฟท์ 1-4",floor:"20"},
+  {no:190,code:"90-EE-LFE04-0190",location:"หน้าห้อง Room 02",floor:"20"},
+  {no:191,code:"90-EE-LFE04-0191",location:"โถงพักคอย",floor:"20"},
+  {no:192,code:"90-EE-LFE04-0192",location:"หน้าห้อง Room 10",floor:"20"},
+  {no:193,code:"90-EE-LFE04-0193",location:"หน้าห้อง Room 15",floor:"20"},
+  {no:194,code:"90-EE-LFE04-0194",location:"หน้าห้อง Room 20",floor:"20"},
+  {no:195,code:"90-EE-LFE04-0195",location:"ผนังลิฟท์ 9,13",floor:"21"},
+  {no:196,code:"90-EE-LFE04-0196",location:"ผนังลิฟท์ 5-8",floor:"21"},
+  {no:197,code:"90-EE-LFE04-0197",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"21"},
+  {no:198,code:"90-EE-LFE04-0198",location:"หน้าลิฟท์ 1-4",floor:"21"},
+  {no:199,code:"90-EE-LFE04-0199",location:"ผนังลิฟท์ 9,13",floor:"22"},
+  {no:200,code:"90-EE-LFE04-0200",location:"ผนังลิฟท์ 5-8",floor:"22"},
+  {no:201,code:"90-EE-LFE04-0201",location:"ผนังข้างลิฟท์ 5-6-7-8",floor:"22"},
+  {no:202,code:"90-EE-LFE04-0202",location:"หน้าลิฟท์ 1-4",floor:"22"},
+  {no:203,code:"90-EE-LFE04-0203",location:"ผนังลิฟท์ 9,13",floor:"24"},
+  {no:204,code:"90-EE-LFE04-0204",location:"ห้องเครื่องลิฟต์ 5-8",floor:"24"},
+  {no:205,code:"90-EE-LFE04-0205",location:"ทางเดินบริการ",floor:"24"},
+  {no:206,code:"90-EE-LFE04-0206",location:"ห้องเครื่องลิฟต์ 1-4",floor:"24"},
+  {no:207,code:"90-EE-LFE04-0207",location:"ห้องเครื่องปั้มน้ำ",floor:"24"},
+  {no:214,code:"90-EE-LFE04-0214",location:"ทางเดินออกตู้ DB-VRV-01",floor:"P7"},
+  {no:215,code:"90-EE-LFE04-0215",location:"ประตูทางเข้าตรงกลาง",floor:"P7"},
+  {no:216,code:"90-EE-LFE04-0216",location:"หน้าประตู ICU",floor:"P7"},
+  {no:217,code:"90-EE-LFE04-0217",location:"หน้าเคาน์เตอร์พยาบาล ICU",floor:"P7"},
+  {no:218,code:"90-EE-LFE04-0218",location:"ICU 4",floor:"P7"},
+  {no:219,code:"90-EE-LFE04-0219",location:"ICU หน้าห้อง ICU 8",floor:"P7"},
+  {no:220,code:"90-EE-LFE04-0220",location:"ICU Isolation5",floor:"P7"},
+  {no:221,code:"90-EE-LFE04-0221",location:"ICU Isolation2",floor:"P7"},
+  {no:222,code:"90-EE-LFE04-0222",location:"ICU Isolation1",floor:"P7"},
+  {no:223,code:"90-EE-LFE04-0223",location:"ข้างห้อง CCU 5 ทางเดิน",floor:"P7"},
+  {no:224,code:"90-EE-LFE04-0224",location:"หน้าลิฟท์ 13",floor:"P7"},
+  {no:225,code:"90-EE-LFE04-0225",location:"หน้าบันได ST 4",floor:"P7"},
+  {no:226,code:"90-EE-LFE04-0226",location:"หน้าห้อง ICU 2",floor:"P7"},
+  {no:388,code:"90-EE-LFE04-0388",location:"บันได ST4",floor:"P7"},
+  {no:227,code:"90-EE-LFE04-0227",location:"Canteen",floor:"P8"},
+  {no:228,code:"90-EE-LFE04-0228",location:"Canteen (2)",floor:"P8"},
+  {no:229,code:"90-EE-LFE04-0229",location:"หน้าลิฟท์ 10",floor:"P8"},
+  {no:230,code:"90-EE-LFE04-0230",location:"ลิฟท์ 10",floor:"P8"},
+  {no:231,code:"90-EE-LFE04-0231",location:"หน้าหอง Room 9",floor:"P8"},
+  {no:232,code:"90-EE-LFE04-0232",location:"ST 14",floor:"P8"},
+  {no:233,code:"90-EE-LFE04-0233",location:"Shaft ไฟฟ้า P8",floor:"P8"},
+  {no:234,code:"90-EE-LFE04-0234",location:"Shaft ประปา",floor:"P8"},
+  {no:235,code:"90-EE-LFE04-0235",location:"หน้าลิฟท์ 11,12",floor:"P8"},
+  {no:236,code:"90-EE-LFE04-0236",location:"ข้างลิฟท์ 11,12",floor:"P8"},
+  {no:237,code:"90-EE-LFE04-0237",location:"หน้าห้อง 8",floor:"P8"},
+  {no:238,code:"90-EE-LFE04-0238",location:"หน้าห้อง 27",floor:"P8"},
+  {no:239,code:"90-EE-LFE04-0239",location:"หน้าลิฟท์ 10 (2)",floor:"P8"},
+  {no:387,code:"90-EE-LFE04-0387",location:"บันได ST14",floor:"P8"},
+  {no:240,code:"90-EE-LFE04-0240",location:"หน้าประตูทางเข้าหอพัก",floor:"P9"},
+  {no:241,code:"90-EE-LFE04-0241",location:"หน้าลิฟท์ 11,12",floor:"P9"},
+  {no:242,code:"90-EE-LFE04-0242",location:"ห้อง Shaft ประปา",floor:"P9"},
+  {no:243,code:"90-EE-LFE04-0243",location:"ห้อง Shaft ไฟฟ้า",floor:"P9"},
+  {no:244,code:"90-EE-LFE04-0244",location:"ตรงข้ามห้อง 8",floor:"P9"},
+  {no:303,code:"90-EE-LFE04-0303",location:"บันได ST 2",floor:"P9"},
+  {no:386,code:"90-EE-LFE04-0386",location:"บันได ST4",floor:"P9"},
+  {no:245,code:"90-EE-LFE04-0245",location:"หน้าห้องพัก 5",floor:"P10"},
+  {no:246,code:"90-EE-LFE04-0246",location:"หน้าลิฟท์ 10",floor:"P10"},
+  {no:247,code:"90-EE-LFE04-0247",location:"หน้าลิฟท์ 11-12",floor:"P10"},
+  {no:248,code:"90-EE-LFE04-0248",location:"ห้องประปา",floor:"P10"},
+  {no:249,code:"90-EE-LFE04-0249",location:"ห้องไฟฟ้า",floor:"P10"},
+  {no:302,code:"90-EE-LFE04-0302",location:"บันได ST 2",floor:"P10"},
+  {no:385,code:"90-EE-LFE04-0385",location:"บันได ST4",floor:"P10"},
+  {no:250,code:"90-EE-LFE04-0250",location:"หน้า Chiller Pump",floor:"P11"},
+  {no:251,code:"90-EE-LFE04-0251",location:"ห้อง AIS/DTAC/TOT",floor:"P11"},
+  {no:252,code:"90-EE-LFE04-0252",location:"ห้องไฟฟ้าตู้ MDB",floor:"P11"},
+  {no:253,code:"90-EE-LFE04-0253",location:"ห้องไฟฟ้า EMDB",floor:"P11"},
+  {no:254,code:"90-EE-LFE04-0254",location:"ห้องเครื่องปั่นไฟ",floor:"P11"},
+  {no:301,code:"90-EE-LFE04-0301",location:"บันได ST 2",floor:"P11"},
+  {no:380,code:"90-EE-LFE04-0380",location:"บันได ST14 P11",floor:"P11"},
+  {no:384,code:"90-EE-LFE04-0384",location:"บันได ST4",floor:"P11"},
+  {no:381,code:"90-EE-LFE04-0381",location:"บันได ST14 P11-12",floor:"P11-12"},
+  {no:300,code:"90-EE-LFE04-0300",location:"บันได ST 2",floor:"P12"},
+  {no:382,code:"90-EE-LFE04-0382",location:"บันได ST14",floor:"P12"},
+  {no:383,code:"90-EE-LFE04-0383",location:"บันได ST4",floor:"P12"},
+  {no:389,code:"90-EE-LFE04-0389",location:"บันได ST4",floor:"P6A"},
+  // ST1
+  ...[255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299].map((n,i)=>({no:n,code:`90-EE-LFE04-${String(n).padStart(4,'0')}`,location:"บันได ST 1",floor:"ST1"})),
+  // ST2
+  ...[300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319].map(n=>({no:n,code:`90-EE-LFE04-${String(n).padStart(4,'0')}`,location:"บันได ST 2",floor:"ST2"})),
+  // ST3
+  ...[320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360,361,362,363,364,365].map(n=>({no:n,code:`90-EE-LFE04-${String(n).padStart(4,'0')}`,location:"บันได ST 3",floor:"ST3"})),
+  // ST5
+  ...[366,367,368,369,370,371,372,373,374,375,376,377,378,379].map(n=>({no:n,code:`90-EE-LFE04-${String(n).padStart(4,'0')}`,location:"บันได ST 5",floor:"ST5"})),
+];
+
+const GRP_ORDER=['B2','B1','1','1A','2','3','4','5','6','6A','7','8','9','10','18','19','20','21','22','24','P7','P8','P9','P10','P11','P11-12','P12','P6A','ST1','ST2','ST3','ST5'];
+function glabel(g){
+  if(g==='ST1') return '🪜 บันได ST 1';if(g==='ST2') return '🪜 บันได ST 2';
+  if(g==='ST3') return '🪜 บันได ST 3';if(g==='ST5') return '🪜 บันได ST 5';
+  if(g.startsWith('P')) return '📐 Zone '+g;
+  if(g==='B2'||g==='B1') return '🅱 ชั้น '+g;
+  return '📍 ชั้น '+g;
+}
+
+// STATUS STORAGE: statuses[monthIdx][code] = 'ok'|'pending'|'skip'
+let statuses = {};
+for(let m=0;m<12;m++) statuses[m]={};
+// Pre-fill March (month 2) with some completed data as demo
+const march=statuses[2];
+DEVICES.slice(0,93).forEach(d=>{ march[d.code]='ok'; });
+
+let curMonth=2, curGroup='ALL', curView='list', sq='';
+let floorChartDough=null, floorChartBar=null;
+
+function gs(code){ return (statuses[curMonth][code]||'pending'); }
+function ss(code,v){ statuses[curMonth][code]=v; saveToStorage(); bSum(); bContent(); }
+
+// ===== MONTH BAR =====
+function bMonthBar(){
+  let h='';
+  MONTHS.forEach((m,i)=>{
+    const items=DEVICES;
+    const ok=items.filter(d=>(statuses[i][d.code]==='ok')).length;
+    const done=ok===items.length;
+    const isCur=i===curMonth;
+    h+=`<button class="mtab${isCur?' active':''}${done?' done':''}" onclick="setMonth(${i})">${MSHORT[i]}<br><span style="font-size:.6rem;opacity:.7">${ok}/${items.length}</span></button>`;
+  });
+  document.getElementById('monthBar').innerHTML=h;
+}
+function setMonth(m){ curMonth=m; bMonthBar(); bSum(); bTabs(); bContent(); }
+
+// ===== SUMMARY =====
+function bSum(){
+  const total=DEVICES.length;
+  const ok=DEVICES.filter(d=>gs(d.code)==='ok').length;
+  const skip=DEVICES.filter(d=>gs(d.code)==='skip').length;
+  const pct=Math.round(ok/total*100);
+  document.getElementById('sg').innerHTML=`
+    <div class="sc t"><div class="n">${total}</div><div class="l">เครื่องทั้งหมด</div></div>
+    <div class="sc ok"><div class="n">${ok}</div><div class="l">✓ ผ่านตรวจ</div></div>
+    <div class="sc pd"><div class="n">${total-ok-skip}</div><div class="l">⏳ รอตรวจ</div></div>
+    <div class="sc pr"><div class="n">${pct}%</div><div class="l">ความคืบหน้า</div></div>
+    <div class="sc"><div class="n" style="color:var(--tx2)">${MONTHS[curMonth]}</div><div class="l">เดือนที่เลือก</div></div>
+  `;
+}
+
+// ===== TABS =====
+function bTabs(){
+  const groups=[...new Set(DEVICES.map(d=>d.floor))];
+  const og=GRP_ORDER.filter(g=>groups.includes(g));
+  let h=`<button class="tab ${curGroup==='ALL'?'active':''}" onclick="setGroup('ALL')">ทั้งหมด (${DEVICES.length})</button>`;
+  og.forEach(g=>{
+    const c=DEVICES.filter(d=>d.floor===g).length;
+    h+=`<button class="tab ${curGroup===g?'active':''}" onclick="setGroup('${g}')">${glabel(g).replace(/^[^ ]+ /,'')} (${c})</button>`;
+  });
+  document.getElementById('tabs').innerHTML=h;
+}
+function setGroup(g){ curGroup=g; bTabs(); bContent(); }
+
+// ===== VIEW =====
+function setView(v){
+  curView=v;
+  document.getElementById('vlist').classList.toggle('active',v==='list');
+  document.getElementById('vchart').classList.toggle('active',v==='chart');
+  document.getElementById('listView').style.display=v==='list'?'block':'none';
+  document.getElementById('chartView').classList.toggle('show',v==='chart');
+  if(v==='chart') bCharts();
+}
+
+// ===== FILTER =====
+function doFilter(){ sq=document.getElementById('sb').value.toLowerCase(); bContent(); }
+
+// ===== LIST CONTENT =====
+function bContent(){
+  if(curView==='chart'){ bCharts(); return; }
+  const groups=[...new Set(DEVICES.map(d=>d.floor))];
+  const og=GRP_ORDER.filter(g=>groups.includes(g));
+  const show=curGroup==='ALL'?og:[curGroup];
+  let h='';
+  show.forEach(g=>{
+    let items=DEVICES.filter(d=>d.floor===g);
+    if(!items.length) return;
+    if(sq) items=items.filter(d=>d.code.toLowerCase().includes(sq)||d.location.toLowerCase().includes(sq)||String(d.no).includes(sq)||d.floor.toLowerCase().includes(sq));
+    if(!items.length) return;
+    const ok=items.filter(d=>gs(d.code)==='ok').length;
+    const pd=items.filter(d=>gs(d.code)==='pending').length;
+    h+=`<div class="fsec">
+      <div class="fhead">
+        <span class="flabel">${glabel(g)}</span>
+        <span class="fcnt">${items.length} เครื่อง</span>
+        <div class="fstats">
+          <span class="sp ok">✓ ${ok}</span>
+          <span class="sp pd">⏳ ${pd}</span>
+          <button class="fqr-btn" onclick="openFloorModal('${g}')">📍 QR ชั้นนี้</button>
+        </div>
+      </div>
+      <div class="dgrid">`;
+    items.sort((a,b)=>a.no-b.no).forEach(d=>{
+      const s=gs(d.code);
+      h+=`<div class="dcard s-${s}" onclick="openDev(${d.no})">
+        <div class="dsbar"></div>
+        <div class="dbody">
+          <div class="dnum">#${String(d.no).padStart(3,'0')} · ชั้น ${d.floor}</div>
+          <div class="dcode">${d.code}</div>
+          <div class="dloc">${d.location}</div>
+        </div>
+        <div class="dfoot">
+          <span class="sdot ${s}"></span>
+          <span class="stxt">${s==='ok'?'ผ่านแล้ว':s==='skip'?'ข้าม':'รอตรวจ'}</span>
+          <button class="qbtn" onclick="event.stopPropagation();openDev(${d.no})">QR</button>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
+  document.getElementById('listView').innerHTML=h||`<div class="nodata">ไม่พบข้อมูล</div>`;
+}
+
+// ===== CHART VIEW =====
+let mainChartInst={};
+function bCharts(){
+  const groups=[...new Set(DEVICES.map(d=>d.floor))];
+  const og=GRP_ORDER.filter(g=>groups.includes(g));
+  const show=curGroup==='ALL'?og:[curGroup];
+
+  // Build per-floor data
+  const floorData=show.map(g=>{
+    const items=DEVICES.filter(d=>d.floor===g);
+    return {
+      g, label:glabel(g).replace(/^.. /,''),
+      total:items.length,
+      ok:items.filter(d=>gs(d.code)==='ok').length,
+      pd:items.filter(d=>gs(d.code)==='pending').length,
+    };
+  });
+
+  // Monthly trend
+  const monthOk=MONTHS.map((_,mi)=>DEVICES.filter(d=>(statuses[mi][d.code]==='ok')).length);
+
+  let h=`
+  <div class="chart-card">
+    <div class="chart-title">📊 ความคืบหน้ารายเดือน 2026</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:.7rem;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;"></span>ผ่านตรวจ</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1f2d47;"></span>ยังไม่ตรวจ</span>
+    </div>
+    <div style="position:relative;height:200px;"><canvas id="cMonthly"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📍 สถานะแต่ละชั้น — ${MONTHS[curMonth]}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:.7rem;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;"></span>ผ่านตรวจ</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#ffd600;"></span>รอตรวจ</span>
+    </div>
+    <div style="position:relative;height:${Math.max(240, floorData.length*32+60)}px;"><canvas id="cFloorBar"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">🍩 สัดส่วนสถานะ — ${MONTHS[curMonth]}</div>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="position:relative;width:180px;height:180px;flex-shrink:0;"><canvas id="cDough"></canvas></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px;padding-top:8px;" id="cDoughLeg"></div>
+    </div>
+  </div>`;
+  document.getElementById('chartView').innerHTML=h;
+
+  // Destroy old charts
+  Object.values(mainChartInst).forEach(c=>{try{c.destroy();}catch(e){}});
+  mainChartInst={};
+
+  const isDark=true;
+  const gridColor='rgba(255,255,255,0.06)';
+  const tickColor='#8bacc8';
+
+  // Monthly line/bar
+  mainChartInst.monthly=new Chart(document.getElementById('cMonthly'),{
+    type:'bar',
+    data:{
+      labels:MSHORT,
+      datasets:[
+        {label:'ผ่านตรวจ',data:monthOk,backgroundColor:monthOk.map((_,i)=>i===curMonth?'#00e676':'rgba(0,230,118,.35)'),borderRadius:4},
+        {label:'ทั้งหมด',data:MONTHS.map(()=>DEVICES.length),backgroundColor:'rgba(255,255,255,0.04)',borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}`}}},
+      scales:{
+        x:{ticks:{color:tickColor,font:{size:11},autoSkip:false,maxRotation:0},grid:{color:gridColor}},
+        y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor},max:DEVICES.length,min:0}
+      }
+    }
+  });
+
+  // Floor horizontal bar
+  const floorLabels=floorData.map(f=>f.label);
+  const okData=floorData.map(f=>f.ok);
+  const pdData=floorData.map(f=>f.pd);
+  mainChartInst.floorBar=new Chart(document.getElementById('cFloorBar'),{
+    type:'bar',
+    data:{
+      labels:floorLabels,
+      datasets:[
+        {label:'ผ่านตรวจ',data:okData,backgroundColor:'rgba(0,230,118,.7)',borderRadius:3,stack:'s'},
+        {label:'รอตรวจ',data:pdData,backgroundColor:'rgba(255,214,0,.5)',borderRadius:3,stack:'s'},
+      ]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor},stacked:true},
+        y:{ticks:{color:tickColor,font:{size:10}},grid:{display:false},stacked:true}
+      }
+    }
+  });
+
+  // Donut
+  const total=DEVICES.length;
+  const ok2=DEVICES.filter(d=>gs(d.code)==='ok').length;
+  const pd2=DEVICES.filter(d=>gs(d.code)==='pending').length;
+  const sk2=DEVICES.filter(d=>gs(d.code)==='skip').length;
+  mainChartInst.dough=new Chart(document.getElementById('cDough'),{
+    type:'doughnut',
+    data:{
+      labels:['ผ่านตรวจ','รอตรวจ','ข้าม'],
+      datasets:[{data:[ok2,pd2,sk2],backgroundColor:['#00e676','#ffd600','#4a6580'],borderWidth:0,hoverOffset:6}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed} (${Math.round(c.parsed/total*100)}%)`}}}
+    }
+  });
+  document.getElementById('cDoughLeg').innerHTML=[
+    {c:'#00e676',l:'ผ่านตรวจ',v:ok2},{c:'#ffd600',l:'รอตรวจ',v:pd2},{c:'#4a6580',l:'ข้าม',v:sk2}
+  ].map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:.78rem;">
+    <span style="width:11px;height:11px;border-radius:3px;background:${x.c};flex-shrink:0;"></span>
+    <span style="color:var(--tx2);">${x.l}</span>
+    <span style="margin-left:auto;font-family:monospace;font-weight:600;color:var(--tx);">${x.v} <span style="color:var(--tx3);font-size:.68rem;">${Math.round(x.v/total*100)}%</span></span>
+  </div>`).join('');
+}
+
+// ===== DEVICE MODAL =====
+function openDev(no){
+  const d=DEVICES.find(x=>x.no===no); if(!d) return;
+  document.getElementById('devTitle').textContent=`Emergency Light #${String(d.no).padStart(3,'0')}`;
+  
+  // QR = self URL + ?done=CODE&m=MONTH → เมื่อสแกนจะ mark ว่าผ่านอัตโนมัติ
+  const base=getSelfURL();
+  const qrURL=`${base}?done=${encodeURIComponent(d.code)}&m=${curMonth}`;
+  
+  const c=document.getElementById('devQrc'); c.innerHTML='';
+  new QRCode(c,{text:qrURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+  
+  const s=gs(d.code);
+  document.getElementById('devInfo').innerHTML=`
+    <div class="irow"><span class="ilbl">ลำดับ</span><span class="ival">#${String(d.no).padStart(3,'0')}</span></div>
+    <div class="irow"><span class="ilbl">รหัส</span><span class="ival code">${d.code}</span></div>
+    <div class="irow"><span class="ilbl">ชั้น</span><span class="ival">${d.floor}</span></div>
+    <div class="irow"><span class="ilbl">ตำแหน่ง</span><span class="ival">${d.location}</span></div>
+    <div class="irow"><span class="ilbl">เดือน</span><span class="ival">${MONTHS[curMonth]}</span></div>
+    <div class="irow"><span class="ilbl">QR URL</span><span class="ival" style="font-size:.6rem;color:var(--tx3);word-break:break-all;">${qrURL.length>60?qrURL.substring(0,60)+'…':qrURL}</span></div>
+    <div class="irow"><span class="ilbl">สถานะ</span><span class="ival">
+      <select class="status-sel" onchange="ss('${d.code}',this.value);this.closest('.overlay').querySelectorAll('.sdot').forEach(x=>x.className='sdot '+this.value);">
+        <option value="pending" ${s==='pending'?'selected':''}>⏳ รอตรวจสอบ</option>
+        <option value="ok" ${s==='ok'?'selected':''}>✅ ผ่านการตรวจสอบ</option>
+        <option value="skip" ${s==='skip'?'selected':''}>⏭ ข้าม / ไม่เกี่ยวข้อง</option>
+      </select>
+    </span></div>`;
+  
+  // Quick mark done button
+  const fb=document.getElementById('devFbtn');
+  fb.href='#';
+  fb.onclick=(e)=>{e.preventDefault();ss(d.code,'ok');showToast(`✅ #${String(d.no).padStart(3,'0')} บันทึกเรียบร้อย`,'#00e676');closeMod('devOv');};
+  fb.textContent='✅ กดที่นี่เพื่อบันทึก "ผ่านตรวจ" ทันที';
+  fb.style.background='linear-gradient(135deg,rgba(0,230,118,.15),rgba(0,230,118,.05))';
+  fb.style.borderColor='rgba(0,230,118,.3)';
+  fb.style.color='#00e676';
+  openMod('devOv');
+}
+
+// ===== FLOOR PICKER =====
+function openFloorQRPicker(){
+  const groups=[...new Set(DEVICES.map(d=>d.floor))];
+  const og=GRP_ORDER.filter(g=>groups.includes(g));
+  document.getElementById('floorPickerGrid').innerHTML=og.map(g=>`
+    <button onclick="openFloorModal('${g}');closeMod('fqrPicker');" style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:8px 6px;color:var(--tx);font-size:.72rem;cursor:pointer;transition:all .18s;font-family:'IBM Plex Sans Thai',sans-serif;text-align:center;font-weight:600;" onmouseover="this.style.borderColor='#00d4ff';this.style.color='#00d4ff';" onmouseout="this.style.borderColor='';this.style.color='';">
+      ${glabel(g).replace(/^.. /,'')}<br><span style="font-size:.62rem;color:var(--tx3);">${DEVICES.filter(d=>d.floor===g).length} เครื่อง</span>
+    </button>`).join('');
+  openMod('fqrPicker');
+}
+
+// ===== FLOOR DETAIL MODAL =====
+let fDoughInst=null, fBarInst=null;
+function openFloorModal(g){
+  const items=DEVICES.filter(d=>d.floor===g).sort((a,b)=>a.no-b.no);
+  const ok=items.filter(d=>gs(d.code)==='ok').length;
+  const pd=items.filter(d=>gs(d.code)==='pending').length;
+  const sk=items.filter(d=>gs(d.code)==='skip').length;
+
+  document.getElementById('floorTitle').textContent=`${glabel(g)} · ${MONTHS[curMonth]} (${items.length} เครื่อง)`;
+
+  // QR รายชั้น = URL ของแอป + ?floor=G&m=MONTH → เมื่อสแกนจะเปิดหน้านี้แล้ว scroll ไปชั้นนั้น
+  const base=getSelfURL();
+  const floorQrURL=`${base}?floor=${encodeURIComponent(g)}&m=${curMonth}`;
+  const floorQRC=document.getElementById('floorQrc'); floorQRC.innerHTML='';
+  new QRCode(floorQRC,{text:floorQrURL,width:120,height:120,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+
+  // Device list
+  document.getElementById('floorDevList').innerHTML=items.map(d=>{
+    const s=gs(d.code);
+    return `<div class="fdrow">
+      <span class="dc">${d.code}</span>
+      <span class="dl">${d.location}</span>
+      <span class="ds ${s==='ok'?'ok':s==='skip'?'sk':'pd'}">${s==='ok'?'✓ ผ่าน':s==='skip'?'⏭ ข้าม':'⏳ รอ'}</span>
+    </div>`;
+  }).join('');
+
+  // Destroy old charts
+  if(fDoughInst){try{fDoughInst.destroy();}catch(e){}} 
+  if(fBarInst){try{fBarInst.destroy();}catch(e){}}
+
+  openMod('floorOv');
+
+  setTimeout(()=>{
+    // Donut
+    fDoughInst=new Chart(document.getElementById('floorDough'),{
+      type:'doughnut',
+      data:{labels:['ผ่านตรวจ','รอตรวจ','ข้าม'],datasets:[{data:[ok,pd,sk],backgroundColor:['#00e676','#ffd600','#4a6580'],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed}`}}}}
+    });
+    // Monthly bar for this floor
+    const monthOkFloor=MONTHS.map((_,mi)=>items.filter(d=>(statuses[mi][d.code]==='ok')).length);
+    fBarInst=new Chart(document.getElementById('floorBar'),{
+      type:'bar',
+      data:{labels:MSHORT,datasets:[{label:'ผ่าน',data:monthOkFloor,backgroundColor:monthOkFloor.map((_,i)=>i===curMonth?'#00e676':'rgba(0,230,118,.3)'),borderRadius:3}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{ticks:{color:'#8bacc8',font:{size:9},autoSkip:false,maxRotation:0},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'#8bacc8',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},max:items.length,min:0}
+        }
+      }
+    });
+  },80);
+}
+
+// ===== MODAL HELPERS =====
+function openMod(id){ document.getElementById(id).classList.add('open'); }
+function closeMod(id){ document.getElementById(id).classList.remove('open'); }
+function cls(e,id){ if(e.target===document.getElementById(id)) closeMod(id); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') ['devOv','fqrPicker','floorOv','doneOv'].forEach(closeMod); });
+
+// ===== TOAST =====
+function showToast(msg,color='#00e676'){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:#111827;border:1px solid #1f2d47;color:#e8f4fd;padding:10px 20px;border-radius:10px;font-size:.82rem;z-index:9999;transition:transform .3s,opacity .3s;opacity:0;font-family:IBM Plex Sans Thai,sans-serif;text-align:center;max-width:90vw;box-shadow:0 4px 20px rgba(0,0,0,.5);';document.body.appendChild(t);}
+  t.innerHTML=`<span style="color:${color};margin-right:6px;">●</span>${msg}`;
+  t.style.transform='translateX(-50%) translateY(0)';t.style.opacity='1';
+  clearTimeout(t._tid);t._tid=setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';t.style.opacity='0';},3200);
+}
+
+// ===== SELF-URL for QR =====
+function getSelfURL(){
+  // ถ้าเปิดจาก file:// ให้ใช้ data URI approach แทน
+  const loc=window.location.href.split('?')[0].split('#')[0];
+  return loc;
+}
+
+// ===== URL PARAM HANDLER (เมื่อสแกน QR แล้วเปิดหน้านี้) =====
+function handleURLParams(){
+  const p=new URLSearchParams(window.location.search);
+  const doneCode=p.get('done');
+  const doneMonth=p.get('m');
+  if(!doneCode) return;
+
+  const m=doneMonth!==null?parseInt(doneMonth):new Date().getMonth();
+  const d=DEVICES.find(x=>x.code===doneCode);
+  if(!d){showToast('ไม่พบรหัสเครื่อง: '+doneCode,'#ff6b35');return;}
+
+  // Mark as ok
+  if(!statuses[m]) statuses[m]={};
+  statuses[m][doneCode]='ok';
+  curMonth=m;
+
+  // Save to localStorage
+  saveToStorage();
+
+  // Show confirmation screen
+  showDoneScreen(d,m);
+
+  // Clean URL
+  const url=window.location.pathname;
+  window.history.replaceState({},'',url);
+}
+
+function showDoneScreen(d,m){
+  const el=document.getElementById('doneContent');
+  el.innerHTML=`
+    <div style="text-align:center;padding:8px 0 16px;">
+      <div style="width:64px;height:64px;background:rgba(0,230,118,.15);border:2px solid #00e676;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;">✓</div>
+      <div style="font-size:1rem;font-weight:700;color:#00e676;margin-bottom:6px;">บันทึกสำเร็จ!</div>
+      <div style="font-size:.78rem;color:var(--tx2);margin-bottom:16px;">ตรวจสอบเรียบร้อย — ${MONTHS[m]}</div>
+    </div>
+    <div class="ilist">
+      <div class="irow"><span class="ilbl">ลำดับ</span><span class="ival">#${String(d.no).padStart(3,'0')}</span></div>
+      <div class="irow"><span class="ilbl">รหัส</span><span class="ival code">${d.code}</span></div>
+      <div class="irow"><span class="ilbl">ชั้น</span><span class="ival">${d.floor}</span></div>
+      <div class="irow"><span class="ilbl">ตำแหน่ง</span><span class="ival">${d.location}</span></div>
+      <div class="irow"><span class="ilbl">เดือน</span><span class="ival" style="color:#00e676;font-weight:600;">${MONTHS[m]}</span></div>
+      <div class="irow"><span class="ilbl">สถานะ</span><span class="ival" style="color:#00e676;font-weight:600;">✅ ผ่านการตรวจสอบ</span></div>
+    </div>
+    <button onclick="closeMod('doneOv');bSum();bContent();" style="width:100%;margin-top:14px;padding:11px;background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);border-radius:9px;color:#00e676;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;">ดูรายการทั้งหมด →</button>
+  `;
+  openMod('doneOv');
+}
+
+// ===== LOCAL STORAGE =====
+function saveToStorage(){
+  try{ localStorage.setItem('el_statuses_2026', JSON.stringify(statuses)); }catch(e){}
+}
+function loadFromStorage(){
+  try{
+    const raw=localStorage.getItem('el_statuses_2026');
+    if(raw){
+      const saved=JSON.parse(raw);
+      for(let m=0;m<12;m++){
+        if(saved[m]) Object.assign(statuses[m], saved[m]);
+      }
+    }
+  }catch(e){}
+}
+
+// ===== INIT =====
+loadFromStorage();
+// Pre-fill March demo only if no saved data
+if(!localStorage.getItem('el_statuses_2026')){
+  DEVICES.slice(0,93).forEach(d=>{ statuses[2][d.code]='ok'; });
+  saveToStorage();
+}
+
+// Detect file:// mode and warn
+if(window.location.protocol==='file:'){
+  document.getElementById('fileBanner').style.display='block';
+  document.querySelector('.wrap').style.paddingTop='60px';
+}
+
+bMonthBar(); bSum(); bTabs(); bContent();
+handleURLParams();
+
+// Handle ?floor= param (open floor modal directly)
+(function(){
+  const p=new URLSearchParams(window.location.search);
+  const floorParam=p.get('floor');
+  const mParam=p.get('m');
+  if(floorParam && !p.get('done')){
+    if(mParam!==null) curMonth=parseInt(mParam);
+    const url=window.location.pathname;
+    window.history.replaceState({},'',url);
+    setTimeout(()=>openFloorModal(floorParam),300);
+  }
+})();
+</script>
+</body>
+</html>
