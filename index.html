@@ -154,6 +154,10 @@ select.status-sel{background:var(--s2);border:1px solid var(--br);color:var(--tx
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+        <button id="syncBtn" onclick="syncFromSheet()" class="print-btn" style="background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--ac);">🔄 ซิงค์จาก Sheet</button>
+        <span id="lastSyncTxt" style="font-size:.6rem;color:var(--tx3);">ยังไม่ได้ซิงค์</span>
+      </div>
       <button class="print-btn" onclick="window.print()">🖨 พิมพ์</button>
     </div>
   </div>
@@ -779,42 +783,155 @@ function bCharts(){
   </div>`).join('');
 }
 
+// ===== GOOGLE FORM PRE-FILL CONFIG =====
+const FORM_BASE='https://docs.google.com/forms/d/e/1FAIpQLSfCwwW-HJqOM-h_ImMh30wCbUyPs4_9q1at85b8rHeIJ-slcw/viewform';
+const FORM_ENTRY={
+  asset_id : 'entry.956392075',   // Asset_ID
+  date     : 'entry.248329088',   // วันที่ตรวจ (pre-fill วันนี้อัตโนมัติ)
+  area     : 'entry.263664409',   // ชื่อช่าง — ไม่ pre-fill (ให้ช่างกรอกเอง)
+  // entry.1303863306 = ทำความสะอาดทั่วไป
+  // entry.1883759676 = ตรวจสอบสภาพทั่วไป
+  // entry.842039966  = แบตเตอรี่
+  // entry.615954137  = ทดสอบ 30 วินาที
+  // entry.205384732  = ทดสอบ 1.30 ชม.
+  // entry.1204967931 = ผลโดยรวม
+  // entry.1364487721 = หมายเหตุ
+};
+
+function buildFormURL(d){
+  // Pre-fill: รหัสเครื่อง + วันที่ตรวจ (วันนี้) + พื้นที่ใน Asset_ID
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm   = String(today.getMonth()+1).padStart(2,'0');
+  const dd   = String(today.getDate()).padStart(2,'0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+
+  const params = new URLSearchParams();
+  params.set(FORM_ENTRY.asset_id, d.code);                         // รหัสเครื่อง → ขึ้นอัตโนมัติ
+  params.set(FORM_ENTRY.date, dateStr);                             // วันที่ตรวจ → วันนี้อัตโนมัติ
+  params.set('usp','pp_url');
+  return `${FORM_BASE}?${params.toString()}`;
+}
+
+// ===== SHEET SYNC =====
+const SHEET_ID='19JP861H1UdRO_zrL156gZjRhL8xUl1sLIgJEr_EuCc0';
+// Google Sheets Public CSV export (ต้องตั้งค่า Share → Anyone with link → Viewer)
+const SHEET_CSV=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+// Apps Script Web App URL (ตั้งค่าตามไฟล์ apps-script.js)
+let APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxVvfoR2ZoH5AGD3qNc7mWLGahCvm1KM2Sx4b6I9OW3aw3ahU2vdEL5ZysRLLvbiNTAjg/exec';
+
+let sheetData=[]; // cache ข้อมูลจาก Sheet
+let lastSync=null;
+
+async function syncFromSheet(){
+  const btn=document.getElementById('syncBtn');
+  btn.textContent='🔄 กำลังโหลด...';
+  btn.disabled=true;
+  try{
+    let rows=[];
+
+    if(APPS_SCRIPT_URL){
+      // ใช้ Apps Script Web App (แนะนำ — ไม่ติดปัญหา CORS)
+      const res=await fetch(APPS_SCRIPT_URL+'?action=getData&t='+Date.now());
+      const json=await res.json();
+      rows=json.rows||[];
+    } else {
+      // Fallback: ดึง CSV ตรงจาก Sheet (ต้องตั้งค่า Share = Anyone can view)
+      const res=await fetch(SHEET_CSV+'&t='+Date.now());
+      const text=await res.text();
+      const lines=text.trim().split('\n');
+      rows=lines.slice(1).map(r=>{
+        const cells=[];let cur='',inQ=false;
+        for(let i=0;i<r.length;i++){
+          if(r[i]==='"'){inQ=!inQ;}
+          else if(r[i]===','&&!inQ){cells.push(cur.trim());cur='';}
+          else cur+=r[i];
+        }
+        cells.push(cur.trim());
+        return {
+          timestamp:cells[0],code:cells[1],date:cells[2],tech:cells[3],
+          clean:cells[4],check:cells[5],battery:cells[6],
+          test30:cells[7],test130:cells[8],result:cells[9],
+          note:cells[10],area:cells[11]
+        };
+      }).filter(r=>r.code);
+    }
+
+    sheetData=rows;
+    let updated=0;
+    rows.forEach(row=>{
+      const d=DEVICES.find(x=>x.code===row.code);
+      if(!d) return;
+      const ts=new Date(row.timestamp);
+      if(isNaN(ts.getTime())) return;
+      const m=ts.getMonth();
+      if(!statuses[m]) statuses[m]={};
+      const newStatus=row.result&&row.result.toLowerCase().includes('pass')?'ok':
+                       row.result&&row.result.toLowerCase().includes('fail')?'fail':'ok';
+      if(statuses[m][row.code]!==newStatus){statuses[m][row.code]=newStatus;updated++;}
+    });
+
+    saveToStorage();
+    lastSync=new Date();
+    document.getElementById('lastSyncTxt').textContent='ซิงค์ล่าสุด: '+lastSync.toLocaleTimeString('th-TH');
+    showToast(`✅ ซิงค์สำเร็จ ${rows.length} รายการ · อัปเดต ${updated} เครื่อง`,'#00e676');
+    bSum(); bMonthBar(); bContent();
+    btn.textContent='✅ ซิงค์แล้ว';
+    setTimeout(()=>{btn.textContent='🔄 ซิงค์จาก Sheet';btn.disabled=false;},3000);
+  }catch(e){
+    console.error(e);
+    showToast('❌ ซิงค์ไม่ได้ — ตรวจสอบ: 1) Share Sheet เป็น Anyone view  2) APPS_SCRIPT_URL ถูกต้อง','#ff4444');
+    btn.textContent='❌ ลองใหม่';
+    btn.disabled=false;
+  }
+}
+
 // ===== DEVICE MODAL =====
 function openDev(no){
   const d=DEVICES.find(x=>x.no===no); if(!d) return;
   document.getElementById('devTitle').textContent=`Emergency Light #${String(d.no).padStart(3,'0')}`;
   
-  // QR = self URL + ?done=CODE&m=MONTH → เมื่อสแกนจะ mark ว่าผ่านอัตโนมัติ
-  const base=getSelfURL();
-  const qrURL=`${base}?done=${encodeURIComponent(d.code)}&m=${curMonth}`;
-  
+  // QR = Google Form URL พร้อม pre-fill รหัสเครื่อง + พื้นที่
+  const formURL=buildFormURL(d);
   const c=document.getElementById('devQrc'); c.innerHTML='';
-  new QRCode(c,{text:qrURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+  new QRCode(c,{text:formURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
   
   const s=gs(d.code);
+  // หาข้อมูลล่าสุดจาก Sheet
+  const latest=sheetData.filter(r=>r.code===d.code).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
+  
   document.getElementById('devInfo').innerHTML=`
-    <div class="irow"><span class="ilbl">ลำดับ</span><span class="ival">#${String(d.no).padStart(3,'0')}</span></div>
     <div class="irow"><span class="ilbl">รหัส</span><span class="ival code">${d.code}</span></div>
     <div class="irow"><span class="ilbl">ชั้น</span><span class="ival">${d.floor}</span></div>
     <div class="irow"><span class="ilbl">ตำแหน่ง</span><span class="ival">${d.location}</span></div>
     <div class="irow"><span class="ilbl">เดือน</span><span class="ival">${MONTHS[curMonth]}</span></div>
-    <div class="irow"><span class="ilbl">QR URL</span><span class="ival" style="font-size:.6rem;color:var(--tx3);word-break:break-all;">${qrURL.length>60?qrURL.substring(0,60)+'…':qrURL}</span></div>
-    <div class="irow"><span class="ilbl">สถานะ</span><span class="ival">
-      <select class="status-sel" onchange="ss('${d.code}',this.value);this.closest('.overlay').querySelectorAll('.sdot').forEach(x=>x.className='sdot '+this.value);">
-        <option value="pending" ${s==='pending'?'selected':''}>⏳ รอตรวจสอบ</option>
-        <option value="ok" ${s==='ok'?'selected':''}>✅ ผ่านการตรวจสอบ</option>
-        <option value="skip" ${s==='skip'?'selected':''}>⏭ ข้าม / ไม่เกี่ยวข้อง</option>
-      </select>
-    </span></div>`;
+    <div class="irow"><span class="ilbl">สถานะ</span><span class="ival" style="color:${s==='ok'?'#00e676':s==='fail'?'#ff4444':'#ffd600'};font-weight:700;">
+      ${s==='ok'?'✅ Pass':s==='fail'?'❌ Fail':'⏳ รอตรวจ'}
+    </span></div>
+    ${latest?`
+    <div style="margin-top:8px;padding:8px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:7px;">
+      <div style="font-size:.68rem;color:var(--tx3);margin-bottom:6px;font-weight:600;">📋 ผลตรวจล่าสุด</div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">วันที่</span><span class="ival">${latest.date}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ช่าง</span><span class="ival">${latest.tech}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ทำความสะอาด</span><span class="ival">${latest.clean||'-'}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ตรวจสภาพ</span><span class="ival">${latest.check||'-'}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">แบตเตอรี่</span><span class="ival">${latest.battery||'-'}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ทดสอบ 30วิ</span><span class="ival">${latest.test30||'-'}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ทดสอบ 1.30ชม</span><span class="ival">${latest.test130||'-'}</span></div>
+      <div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">ผลโดยรวม</span><span class="ival" style="font-weight:700;color:${latest.result&&latest.result.toLowerCase().includes('pass')?'#00e676':'#ff4444'};">${latest.result||'-'}</span></div>
+      ${latest.note?`<div class="irow" style="background:transparent;border:none;padding:3px 0;"><span class="ilbl">หมายเหตุ</span><span class="ival">${latest.note}</span></div>`:''}
+    </div>`:'<div style="font-size:.72rem;color:var(--tx3);text-align:center;padding:8px;">ยังไม่มีข้อมูลจาก Sheet</div>'}
+  `;
   
-  // Quick mark done button
+  // ปุ่มเปิด Form
   const fb=document.getElementById('devFbtn');
-  fb.href='#';
-  fb.onclick=(e)=>{e.preventDefault();ss(d.code,'ok');showToast(`✅ #${String(d.no).padStart(3,'0')} บันทึกเรียบร้อย`,'#00e676');closeMod('devOv');};
-  fb.textContent='✅ กดที่นี่เพื่อบันทึก "ผ่านตรวจ" ทันที';
-  fb.style.background='linear-gradient(135deg,rgba(0,230,118,.15),rgba(0,230,118,.05))';
-  fb.style.borderColor='rgba(0,230,118,.3)';
-  fb.style.color='#00e676';
+  fb.href=formURL;
+  fb.target='_blank';
+  fb.onclick=null;
+  fb.textContent='📋 เปิด Google Form เพื่อกรอกผลตรวจ';
+  fb.style.background='linear-gradient(135deg,rgba(255,107,53,.15),rgba(255,107,53,.05))';
+  fb.style.borderColor='rgba(255,107,53,.3)';
+  fb.style.color='#ff6b35';
   openMod('devOv');
 }
 
@@ -902,36 +1019,21 @@ function showToast(msg,color='#00e676'){
 
 // ===== SELF-URL for QR =====
 function getSelfURL(){
-  // ถ้าเปิดจาก file:// ให้ใช้ data URI approach แทน
-  const loc=window.location.href.split('?')[0].split('#')[0];
-  return loc;
+  return 'https://mutchimawmc.github.io/emergency-light-2026/';
 }
 
-// ===== URL PARAM HANDLER (เมื่อสแกน QR แล้วเปิดหน้านี้) =====
+// ===== URL PARAM HANDLER =====
 function handleURLParams(){
   const p=new URLSearchParams(window.location.search);
-  const doneCode=p.get('done');
-  const doneMonth=p.get('m');
-  if(!doneCode) return;
-
-  const m=doneMonth!==null?parseInt(doneMonth):new Date().getMonth();
-  const d=DEVICES.find(x=>x.code===doneCode);
-  if(!d){showToast('ไม่พบรหัสเครื่อง: '+doneCode,'#ff6b35');return;}
-
-  // Mark as ok
-  if(!statuses[m]) statuses[m]={};
-  statuses[m][doneCode]='ok';
-  curMonth=m;
-
-  // Save to localStorage
-  saveToStorage();
-
-  // Show confirmation screen
-  showDoneScreen(d,m);
-
-  // Clean URL
-  const url=window.location.pathname;
-  window.history.replaceState({},'',url);
+  // ถ้ามี ?floor= ให้เปิด floor modal
+  const floorParam=p.get('floor');
+  const mParam=p.get('m');
+  if(floorParam){
+    if(mParam!==null) curMonth=parseInt(mParam);
+    window.history.replaceState({},'',window.location.pathname);
+    setTimeout(()=>openFloorModal(floorParam),400);
+  }
+  // ลบ ?done= logic ออกแล้ว — ตอนนี้ QR เปิด Google Form แทน
 }
 
 function showDoneScreen(d,m){
@@ -973,33 +1075,14 @@ function loadFromStorage(){
 
 // ===== INIT =====
 loadFromStorage();
-// Pre-fill March demo only if no saved data
 if(!localStorage.getItem('el_statuses_2026')){
   DEVICES.slice(0,93).forEach(d=>{ statuses[2][d.code]='ok'; });
   saveToStorage();
 }
-
-// Detect file:// mode and warn
-if(window.location.protocol==='file:'){
-  document.getElementById('fileBanner').style.display='block';
-  document.querySelector('.wrap').style.paddingTop='60px';
-}
-
 bMonthBar(); bSum(); bTabs(); bContent();
 handleURLParams();
-
-// Handle ?floor= param (open floor modal directly)
-(function(){
-  const p=new URLSearchParams(window.location.search);
-  const floorParam=p.get('floor');
-  const mParam=p.get('m');
-  if(floorParam && !p.get('done')){
-    if(mParam!==null) curMonth=parseInt(mParam);
-    const url=window.location.pathname;
-    window.history.replaceState({},'',url);
-    setTimeout(()=>openFloorModal(floorParam),300);
-  }
-})();
+// Auto-sync ทุก 5 นาที
+setInterval(syncFromSheet, 5*60*1000);
 </script>
 </body>
 </html>
